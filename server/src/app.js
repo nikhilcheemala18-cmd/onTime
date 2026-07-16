@@ -5,6 +5,7 @@ import morgan from 'morgan'
 import { env } from './config/env.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import healthRoutes from './modules/health/health.routes.js'
+import workspaceRoutes from './modules/workspace/workspace.routes.js'
 import { notFound } from './middleware/notFound.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -31,6 +32,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/health', healthRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/workspaces', workspaceRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
