@@ -2,24 +2,8 @@ import { AppError } from '../../utils/AppError.js'
 import { recordActivity } from '../activity/activity.service.js'
 import { Board } from '../board/board.model.js'
 import { List } from '../list/list.model.js'
-import { Workspace } from '../workspace/workspace.model.js'
+import { assertWorkspacePermission } from '../member/member.authorization.js'
 import { Card } from './card.model.js'
-
-async function getWorkspaceForBoard(board) {
-  const workspace = await Workspace.findById(board.workspace)
-
-  if (!workspace) {
-    throw new AppError('Workspace not found', 404)
-  }
-
-  return workspace
-}
-
-async function assertWorkspaceOwner(userId, workspace) {
-  if (workspace.owner.toString() !== userId) {
-    throw new AppError('You are not allowed to access this workspace', 403)
-  }
-}
 
 async function getAuthorizedList(userId, listId) {
   const list = await List.findById(listId)
@@ -34,8 +18,7 @@ async function getAuthorizedList(userId, listId) {
     throw new AppError('Board not found', 404)
   }
 
-  const workspace = await getWorkspaceForBoard(board)
-  await assertWorkspaceOwner(userId, workspace)
+  await assertWorkspacePermission(userId, board.workspace)
 
   return list
 }

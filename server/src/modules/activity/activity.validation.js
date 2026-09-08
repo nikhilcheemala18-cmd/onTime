@@ -17,6 +17,9 @@ export const activityActions = [
   'comment.deleted',
   'attachment.uploaded',
   'attachment.deleted',
+  'member.added',
+  'member.role_updated',
+  'member.removed',
 ]
 
 export const activityEntityTypes = [
@@ -26,6 +29,7 @@ export const activityEntityTypes = [
   'card',
   'comment',
   'attachment',
+  'member',
 ]
 
 const objectIdSchema = z

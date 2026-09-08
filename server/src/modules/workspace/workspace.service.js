@@ -1,5 +1,8 @@
 import { AppError } from '../../utils/AppError.js'
 import { recordActivity } from '../activity/activity.service.js'
+import { assertWorkspacePermission } from '../member/member.authorization.js'
+import { createOwnerMembership } from '../member/member.service.js'
+import { WorkspaceMember } from '../member/member.model.js'
 import { Workspace } from './workspace.model.js'
 
 export async function createWorkspace(ownerId, payload) {
@@ -7,6 +10,7 @@ export async function createWorkspace(ownerId, payload) {
     ...payload,
     owner: ownerId,
   })
+  await createOwnerMembership(workspace._id, ownerId)
 
   await recordActivity({
     action: 'workspace.created',
@@ -23,29 +27,25 @@ export async function createWorkspace(ownerId, payload) {
 }
 
 export async function listWorkspaces(ownerId) {
-  return Workspace.find({ owner: ownerId }).sort({ createdAt: -1 })
+  const memberships = await WorkspaceMember.find({ user: ownerId }).select('workspace')
+  const workspaceIds = memberships.map((membership) => membership.workspace)
+
+  return Workspace.find({
+    $or: [{ owner: ownerId }, { _id: { $in: workspaceIds } }],
+  }).sort({ createdAt: -1 })
 }
 
 export async function getWorkspaceById(ownerId, workspaceId) {
-  const workspace = await Workspace.findOne({
-    _id: workspaceId,
-    owner: ownerId,
-  })
-
-  if (!workspace) {
-    throw new AppError('Workspace not found', 404)
-  }
+  const { workspace } = await assertWorkspacePermission(ownerId, workspaceId)
 
   return workspace
 }
 
 export async function updateWorkspace(ownerId, workspaceId, payload) {
   const changedFields = Object.keys(payload)
-  const workspace = await Workspace.findOneAndUpdate(
-    {
-      _id: workspaceId,
-      owner: ownerId,
-    },
+  await assertWorkspacePermission(ownerId, workspaceId)
+  const workspace = await Workspace.findByIdAndUpdate(
+    workspaceId,
     payload,
     {
       new: true,
@@ -72,10 +72,13 @@ export async function updateWorkspace(ownerId, workspaceId, payload) {
 }
 
 export async function deleteWorkspace(ownerId, workspaceId) {
-  const workspace = await Workspace.findOneAndDelete({
-    _id: workspaceId,
-    owner: ownerId,
-  })
+  const { workspace } = await assertWorkspacePermission(ownerId, workspaceId)
+
+  if (workspace.owner.toString() !== ownerId) {
+    throw new AppError('Only the workspace owner can delete this workspace', 403)
+  }
+
+  await workspace.deleteOne()
 
   if (!workspace) {
     throw new AppError('Workspace not found', 404)

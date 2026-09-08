@@ -11,6 +11,7 @@ import cardRoutes from './modules/card/card.routes.js'
 import commentRoutes from './modules/comment/comment.routes.js'
 import healthRoutes from './modules/health/health.routes.js'
 import listRoutes from './modules/list/list.routes.js'
+import memberRoutes from './modules/member/member.routes.js'
 import workspaceRoutes from './modules/workspace/workspace.routes.js'
 import { notFound } from './middleware/notFound.js'
 import { errorHandler } from './middleware/errorHandler.js'
@@ -38,6 +39,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/health', healthRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/workspaces/:workspaceId/members', memberRoutes)
 app.use('/api/workspaces', workspaceRoutes)
 app.use('/api/boards', boardRoutes)
 app.use('/api/lists', listRoutes)
