@@ -1,4 +1,5 @@
 import { AppError } from '../../utils/AppError.js'
+import { recordActivity } from '../activity/activity.service.js'
 import { Board } from '../board/board.model.js'
 import { List } from '../list/list.model.js'
 import { Workspace } from '../workspace/workspace.model.js'
@@ -59,15 +60,30 @@ async function getNextPosition(listId) {
 
 export async function createCard(userId, payload) {
   const list = await getAuthorizedList(userId, payload.listId)
+  const board = await Board.findById(list.board)
   const position = await getNextPosition(list._id)
 
-  return Card.create({
+  const card = await Card.create({
     title: payload.title,
     description: payload.description,
     list: list._id,
     position,
     createdBy: userId,
   })
+
+  await recordActivity({
+    action: 'card.created',
+    entityType: 'card',
+    entityId: card._id,
+    workspaceId: board.workspace,
+    performedBy: userId,
+    metadata: {
+      title: card.title,
+      position: card.position,
+    },
+  })
+
+  return card
 }
 
 export async function listCards(userId, listId) {
@@ -81,16 +97,43 @@ export async function getCardById(userId, cardId) {
 }
 
 export async function updateCard(userId, cardId, payload) {
+  const changedFields = Object.keys(payload)
   const card = await getAuthorizedCard(userId, cardId)
+  const list = await List.findById(card.list)
+  const board = await Board.findById(list.board)
 
   Object.assign(card, payload)
   await card.save()
+
+  await recordActivity({
+    action: 'card.updated',
+    entityType: 'card',
+    entityId: card._id,
+    workspaceId: board.workspace,
+    performedBy: userId,
+    metadata: {
+      changedFields,
+    },
+  })
 
   return card
 }
 
 export async function deleteCard(userId, cardId) {
   const card = await getAuthorizedCard(userId, cardId)
+  const list = await List.findById(card.list)
+  const board = await Board.findById(list.board)
 
   await card.deleteOne()
+
+  await recordActivity({
+    action: 'card.deleted',
+    entityType: 'card',
+    entityId: card._id,
+    workspaceId: board.workspace,
+    performedBy: userId,
+    metadata: {
+      title: card.title,
+    },
+  })
 }

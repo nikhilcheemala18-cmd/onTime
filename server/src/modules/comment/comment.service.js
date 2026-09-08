@@ -1,4 +1,5 @@
 import { AppError } from '../../utils/AppError.js'
+import { recordActivity } from '../activity/activity.service.js'
 import { Board } from '../board/board.model.js'
 import { Card } from '../card/card.model.js'
 import { List } from '../list/list.model.js'
@@ -66,12 +67,27 @@ async function getAuthorizedComment(userId, commentId) {
 
 export async function createComment(userId, payload) {
   const card = await getAuthorizedCard(userId, payload.cardId)
+  const list = await List.findById(card.list)
+  const board = await Board.findById(list.board)
 
-  return Comment.create({
+  const comment = await Comment.create({
     content: payload.content,
     card: card._id,
     createdBy: userId,
   })
+
+  await recordActivity({
+    action: 'comment.created',
+    entityType: 'comment',
+    entityId: comment._id,
+    workspaceId: board.workspace,
+    performedBy: userId,
+    metadata: {
+      preview: comment.content.slice(0, 120),
+    },
+  })
+
+  return comment
 }
 
 export async function listComments(userId, cardId) {
@@ -89,8 +105,25 @@ export async function updateComment(userId, commentId, payload) {
 
   assertCommentCreator(userId, comment)
 
+  const changedFields = Object.keys(payload)
+  const card = await Card.findById(comment.card)
+  const list = await List.findById(card.list)
+  const board = await Board.findById(list.board)
+
   Object.assign(comment, payload)
   await comment.save()
+
+  await recordActivity({
+    action: 'comment.updated',
+    entityType: 'comment',
+    entityId: comment._id,
+    workspaceId: board.workspace,
+    performedBy: userId,
+    metadata: {
+      changedFields,
+      preview: comment.content.slice(0, 120),
+    },
+  })
 
   return comment
 }
@@ -99,5 +132,19 @@ export async function deleteComment(userId, commentId) {
   const comment = await getAuthorizedComment(userId, commentId)
 
   assertCommentCreator(userId, comment)
+  const card = await Card.findById(comment.card)
+  const list = await List.findById(card.list)
+  const board = await Board.findById(list.board)
   await comment.deleteOne()
+
+  await recordActivity({
+    action: 'comment.deleted',
+    entityType: 'comment',
+    entityId: comment._id,
+    workspaceId: board.workspace,
+    performedBy: userId,
+    metadata: {
+      preview: comment.content.slice(0, 120),
+    },
+  })
 }

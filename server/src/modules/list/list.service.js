@@ -1,4 +1,5 @@
 import { AppError } from '../../utils/AppError.js'
+import { recordActivity } from '../activity/activity.service.js'
 import { Board } from '../board/board.model.js'
 import { Workspace } from '../workspace/workspace.model.js'
 import { List } from './list.model.js'
@@ -54,12 +55,26 @@ export async function createList(userId, payload) {
   const board = await getAuthorizedBoard(userId, payload.boardId)
   const position = await getNextPosition(board._id)
 
-  return List.create({
+  const list = await List.create({
     name: payload.name,
     board: board._id,
     position,
     createdBy: userId,
   })
+
+  await recordActivity({
+    action: 'list.created',
+    entityType: 'list',
+    entityId: list._id,
+    workspaceId: board.workspace,
+    performedBy: userId,
+    metadata: {
+      name: list.name,
+      position: list.position,
+    },
+  })
+
+  return list
 }
 
 export async function listLists(userId, boardId) {
@@ -73,16 +88,41 @@ export async function getListById(userId, listId) {
 }
 
 export async function updateList(userId, listId, payload) {
+  const changedFields = Object.keys(payload)
   const list = await getAuthorizedList(userId, listId)
+  const board = await Board.findById(list.board)
 
   Object.assign(list, payload)
   await list.save()
+
+  await recordActivity({
+    action: 'list.updated',
+    entityType: 'list',
+    entityId: list._id,
+    workspaceId: board.workspace,
+    performedBy: userId,
+    metadata: {
+      changedFields,
+    },
+  })
 
   return list
 }
 
 export async function deleteList(userId, listId) {
   const list = await getAuthorizedList(userId, listId)
+  const board = await Board.findById(list.board)
 
   await list.deleteOne()
+
+  await recordActivity({
+    action: 'list.deleted',
+    entityType: 'list',
+    entityId: list._id,
+    workspaceId: board.workspace,
+    performedBy: userId,
+    metadata: {
+      name: list.name,
+    },
+  })
 }

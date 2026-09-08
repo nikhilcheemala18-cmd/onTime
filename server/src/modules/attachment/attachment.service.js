@@ -2,6 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { AppError } from '../../utils/AppError.js'
+import { recordActivity } from '../activity/activity.service.js'
 import { Board } from '../board/board.model.js'
 import { Card } from '../card/card.model.js'
 import { List } from '../list/list.model.js'
@@ -228,6 +229,8 @@ async function getAuthorizedAttachment(userId, attachmentId) {
 export async function createAttachment(userId, payload, file) {
   try {
     const card = await getAuthorizedCard(userId, payload.cardId)
+    const list = await List.findById(card.list)
+    const board = await Board.findById(list.board)
 
     await validateAttachmentUploadFile(file)
 
@@ -243,6 +246,19 @@ export async function createAttachment(userId, payload, file) {
 
     attachment.url = `/api/attachments/${attachment._id}/download`
     await attachment.save()
+
+    await recordActivity({
+      action: 'attachment.uploaded',
+      entityType: 'attachment',
+      entityId: attachment._id,
+      workspaceId: board.workspace,
+      performedBy: userId,
+      metadata: {
+        originalName: attachment.originalName,
+        mimeType: attachment.mimeType,
+        size: attachment.size,
+      },
+    })
 
     return attachment
   } catch (error) {
@@ -286,10 +302,26 @@ export async function deleteAttachment(userId, attachmentId) {
 
   assertAttachmentUploader(userId, attachment)
 
+  const card = await Card.findById(attachment.card)
+  const list = await List.findById(card.list)
+  const board = await Board.findById(list.board)
   const filePath = path.resolve(uploadsRoot, attachment.filename)
 
   await attachment.deleteOne()
   await removeStoredFile(filePath)
+
+  await recordActivity({
+    action: 'attachment.deleted',
+    entityType: 'attachment',
+    entityId: attachment._id,
+    workspaceId: board.workspace,
+    performedBy: userId,
+    metadata: {
+      originalName: attachment.originalName,
+      mimeType: attachment.mimeType,
+      size: attachment.size,
+    },
+  })
 }
 
 export { MAX_FILE_SIZE, uploadsRoot }

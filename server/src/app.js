@@ -3,6 +3,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import { env } from './config/env.js'
+import activityRoutes from './modules/activity/activity.routes.js'
 import attachmentRoutes from './modules/attachment/attachment.routes.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import boardRoutes from './modules/board/board.routes.js'
@@ -43,6 +44,7 @@ app.use('/api/lists', listRoutes)
 app.use('/api/cards', cardRoutes)
 app.use('/api/comments', commentRoutes)
 app.use('/api/attachments', attachmentRoutes)
+app.use('/api/activities', activityRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
