@@ -2,6 +2,11 @@ import { AppError } from '../../utils/AppError.js'
 import { recordActivity } from '../activity/activity.service.js'
 import { User } from '../auth/auth.model.js'
 import {
+  broadcastWorkspaceEvent,
+  removeUserFromWorkspaceRoom,
+} from '../../realtime/broadcaster.js'
+import { createNotification } from '../notification/notification.service.js'
+import {
   assertWorkspacePermission,
   canManageTargetRole,
   getWorkspaceMembership,
@@ -39,11 +44,8 @@ export async function createOwnerMembership(workspaceId, userId) {
 }
 
 export async function addWorkspaceMember(userId, workspaceId, payload) {
-  const { membership: requesterMembership } = await assertWorkspacePermission(
-    userId,
-    workspaceId,
-    'member:manage',
-  )
+  const { membership: requesterMembership, workspace } =
+    await assertWorkspacePermission(userId, workspaceId, 'member:manage')
 
   const targetUser = await User.findById(payload.userId)
 
@@ -79,6 +81,24 @@ export async function addWorkspaceMember(userId, workspaceId, payload) {
     metadata: {
       targetUserId: membership.user,
       role: membership.role,
+    },
+  })
+
+  await createNotification({
+    recipient: membership.user,
+    workspace: workspace._id,
+    type: 'member.added',
+    message: `You were added to ${workspace.name} as ${membership.role}.`,
+    actor: userId,
+    entityType: 'workspace_member',
+    entityId: membership._id,
+  })
+
+  broadcastWorkspaceEvent({
+    type: 'member.added',
+    workspaceId,
+    data: {
+      member: membership,
     },
   })
 
@@ -142,6 +162,26 @@ export async function updateWorkspaceMemberRole(
     },
   })
 
+  await createNotification({
+    recipient: targetMembership.user,
+    workspace: workspace._id,
+    type: 'member.role_updated',
+    message: `Your role in ${workspace.name} was changed to ${targetMembership.role}.`,
+    actor: userId,
+    entityType: 'workspace_member',
+    entityId: targetMembership._id,
+  })
+
+  broadcastWorkspaceEvent({
+    type: 'member.role_updated',
+    workspaceId,
+    data: {
+      member: targetMembership,
+      previousRole,
+      newRole: targetMembership.role,
+    },
+  })
+
   return WorkspaceMember.findById(targetMembership._id).populate(
     'user',
     'name email createdAt',
@@ -173,6 +213,28 @@ export async function removeWorkspaceMember(userId, workspaceId, memberId) {
     performedBy: userId,
     metadata: {
       targetUserId: targetMembership.user,
+      previousRole: targetMembership.role,
+    },
+  })
+
+  await createNotification({
+    recipient: targetMembership.user,
+    workspace: workspace._id,
+    type: 'member.removed',
+    message: `You were removed from ${workspace.name}.`,
+    actor: userId,
+    entityType: 'workspace_member',
+    entityId: targetMembership._id,
+  })
+
+  removeUserFromWorkspaceRoom(targetMembership.user, workspaceId)
+
+  broadcastWorkspaceEvent({
+    type: 'member.removed',
+    workspaceId,
+    data: {
+      memberId: targetMembership._id,
+      user: targetMembership.user,
       previousRole: targetMembership.role,
     },
   })

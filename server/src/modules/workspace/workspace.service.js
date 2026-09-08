@@ -3,6 +3,7 @@ import { recordActivity } from '../activity/activity.service.js'
 import { assertWorkspacePermission } from '../member/member.authorization.js'
 import { createOwnerMembership } from '../member/member.service.js'
 import { WorkspaceMember } from '../member/member.model.js'
+import { broadcastWorkspaceEvent } from '../../realtime/broadcaster.js'
 import { Workspace } from './workspace.model.js'
 
 export async function createWorkspace(ownerId, payload) {
@@ -20,6 +21,14 @@ export async function createWorkspace(ownerId, payload) {
     performedBy: ownerId,
     metadata: {
       name: workspace.name,
+    },
+  })
+
+  broadcastWorkspaceEvent({
+    type: 'workspace.created',
+    workspaceId: workspace._id,
+    data: {
+      workspace,
     },
   })
 
@@ -64,6 +73,15 @@ export async function updateWorkspace(ownerId, workspaceId, payload) {
     workspaceId: workspace._id,
     performedBy: ownerId,
     metadata: {
+      changedFields,
+    },
+  })
+
+  broadcastWorkspaceEvent({
+    type: 'workspace.updated',
+    workspaceId: workspace._id,
+    data: {
+      workspace,
       changedFields,
     },
   })

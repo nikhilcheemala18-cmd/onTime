@@ -2,6 +2,7 @@ import { AppError } from '../../utils/AppError.js'
 import { recordActivity } from '../activity/activity.service.js'
 import { Board } from '../board/board.model.js'
 import { assertWorkspacePermission } from '../member/member.authorization.js'
+import { broadcastWorkspaceEvent } from '../../realtime/broadcaster.js'
 import { List } from './list.model.js'
 
 async function getAuthorizedBoard(userId, boardId) {
@@ -57,6 +58,14 @@ export async function createList(userId, payload) {
     },
   })
 
+  broadcastWorkspaceEvent({
+    type: 'list.created',
+    workspaceId: board.workspace,
+    data: {
+      list,
+    },
+  })
+
   return list
 }
 
@@ -89,6 +98,15 @@ export async function updateList(userId, listId, payload) {
     },
   })
 
+  broadcastWorkspaceEvent({
+    type: 'list.updated',
+    workspaceId: board.workspace,
+    data: {
+      list,
+      changedFields,
+    },
+  })
+
   return list
 }
 
@@ -106,6 +124,15 @@ export async function deleteList(userId, listId) {
     performedBy: userId,
     metadata: {
       name: list.name,
+    },
+  })
+
+  broadcastWorkspaceEvent({
+    type: 'list.deleted',
+    workspaceId: board.workspace,
+    data: {
+      listId: list._id,
+      board: list.board,
     },
   })
 }

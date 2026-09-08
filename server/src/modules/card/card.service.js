@@ -3,6 +3,7 @@ import { recordActivity } from '../activity/activity.service.js'
 import { Board } from '../board/board.model.js'
 import { List } from '../list/list.model.js'
 import { assertWorkspacePermission } from '../member/member.authorization.js'
+import { broadcastWorkspaceEvent } from '../../realtime/broadcaster.js'
 import { Card } from './card.model.js'
 
 async function getAuthorizedList(userId, listId) {
@@ -66,6 +67,14 @@ export async function createCard(userId, payload) {
     },
   })
 
+  broadcastWorkspaceEvent({
+    type: 'card.created',
+    workspaceId: board.workspace,
+    data: {
+      card,
+    },
+  })
+
   return card
 }
 
@@ -99,6 +108,15 @@ export async function updateCard(userId, cardId, payload) {
     },
   })
 
+  broadcastWorkspaceEvent({
+    type: 'card.updated',
+    workspaceId: board.workspace,
+    data: {
+      card,
+      changedFields,
+    },
+  })
+
   return card
 }
 
@@ -117,6 +135,15 @@ export async function deleteCard(userId, cardId) {
     performedBy: userId,
     metadata: {
       title: card.title,
+    },
+  })
+
+  broadcastWorkspaceEvent({
+    type: 'card.deleted',
+    workspaceId: board.workspace,
+    data: {
+      cardId: card._id,
+      list: card.list,
     },
   })
 }

@@ -12,6 +12,7 @@ import commentRoutes from './modules/comment/comment.routes.js'
 import healthRoutes from './modules/health/health.routes.js'
 import listRoutes from './modules/list/list.routes.js'
 import memberRoutes from './modules/member/member.routes.js'
+import notificationRoutes from './modules/notification/notification.routes.js'
 import workspaceRoutes from './modules/workspace/workspace.routes.js'
 import { notFound } from './middleware/notFound.js'
 import { errorHandler } from './middleware/errorHandler.js'
@@ -47,6 +48,7 @@ app.use('/api/cards', cardRoutes)
 app.use('/api/comments', commentRoutes)
 app.use('/api/attachments', attachmentRoutes)
 app.use('/api/activities', activityRoutes)
+app.use('/api/notifications', notificationRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

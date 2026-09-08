@@ -7,6 +7,7 @@ import { Board } from '../board/board.model.js'
 import { Card } from '../card/card.model.js'
 import { List } from '../list/list.model.js'
 import { assertWorkspacePermission } from '../member/member.authorization.js'
+import { broadcastWorkspaceEvent } from '../../realtime/broadcaster.js'
 import { Attachment } from './attachment.model.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -243,6 +244,14 @@ export async function createAttachment(userId, payload, file) {
       },
     })
 
+    broadcastWorkspaceEvent({
+      type: 'attachment.uploaded',
+      workspaceId: board.workspace,
+      data: {
+        attachment,
+      },
+    })
+
     return attachment
   } catch (error) {
     await removeStoredFile(file?.path)
@@ -303,6 +312,15 @@ export async function deleteAttachment(userId, attachmentId) {
       originalName: attachment.originalName,
       mimeType: attachment.mimeType,
       size: attachment.size,
+    },
+  })
+
+  broadcastWorkspaceEvent({
+    type: 'attachment.deleted',
+    workspaceId: board.workspace,
+    data: {
+      attachmentId: attachment._id,
+      card: attachment.card,
     },
   })
 }

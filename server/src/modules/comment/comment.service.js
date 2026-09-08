@@ -4,6 +4,7 @@ import { Board } from '../board/board.model.js'
 import { Card } from '../card/card.model.js'
 import { List } from '../list/list.model.js'
 import { assertWorkspacePermission } from '../member/member.authorization.js'
+import { broadcastWorkspaceEvent } from '../../realtime/broadcaster.js'
 import { Comment } from './comment.model.js'
 
 function assertCommentCreator(userId, comment) {
@@ -70,6 +71,14 @@ export async function createComment(userId, payload) {
     },
   })
 
+  broadcastWorkspaceEvent({
+    type: 'comment.created',
+    workspaceId: board.workspace,
+    data: {
+      comment,
+    },
+  })
+
   return comment
 }
 
@@ -108,6 +117,15 @@ export async function updateComment(userId, commentId, payload) {
     },
   })
 
+  broadcastWorkspaceEvent({
+    type: 'comment.updated',
+    workspaceId: board.workspace,
+    data: {
+      comment,
+      changedFields,
+    },
+  })
+
   return comment
 }
 
@@ -128,6 +146,15 @@ export async function deleteComment(userId, commentId) {
     performedBy: userId,
     metadata: {
       preview: comment.content.slice(0, 120),
+    },
+  })
+
+  broadcastWorkspaceEvent({
+    type: 'comment.deleted',
+    workspaceId: board.workspace,
+    data: {
+      commentId: comment._id,
+      card: comment.card,
     },
   })
 }

@@ -1,6 +1,7 @@
 import { AppError } from '../../utils/AppError.js'
 import { recordActivity } from '../activity/activity.service.js'
 import { assertWorkspacePermission } from '../member/member.authorization.js'
+import { broadcastWorkspaceEvent } from '../../realtime/broadcaster.js'
 import { Board } from './board.model.js'
 
 export async function createBoard(userId, payload) {
@@ -21,6 +22,14 @@ export async function createBoard(userId, payload) {
     performedBy: userId,
     metadata: {
       title: board.title,
+    },
+  })
+
+  broadcastWorkspaceEvent({
+    type: 'board.created',
+    workspaceId: board.workspace,
+    data: {
+      board,
     },
   })
 
@@ -69,6 +78,15 @@ export async function updateBoard(userId, boardId, payload) {
     },
   })
 
+  broadcastWorkspaceEvent({
+    type: 'board.updated',
+    workspaceId: board.workspace,
+    data: {
+      board,
+      changedFields,
+    },
+  })
+
   return board
 }
 
@@ -90,6 +108,14 @@ export async function deleteBoard(userId, boardId) {
     performedBy: userId,
     metadata: {
       title: board.title,
+    },
+  })
+
+  broadcastWorkspaceEvent({
+    type: 'board.deleted',
+    workspaceId: board.workspace,
+    data: {
+      boardId: board._id,
     },
   })
 }
