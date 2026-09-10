@@ -5,13 +5,16 @@ import { RouterProvider } from 'react-router-dom'
 import { store } from './store.js'
 import { queryClient } from './queryClient.js'
 import { router } from './router.jsx'
+import { ToastProvider } from '../components/ui/Toast.jsx'
 
 export default function AppProviders() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+        <ToastProvider>
+          <RouterProvider router={router} />
+          {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+        </ToastProvider>
       </QueryClientProvider>
     </Provider>
   )

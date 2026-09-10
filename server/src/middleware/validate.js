@@ -1,5 +1,14 @@
 import { AppError } from '../utils/AppError.js'
 
+function setValidatedSource(req, source, value) {
+  Object.defineProperty(req, source, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  })
+}
+
 export const validate =
   (schema, source = 'body') =>
   (req, res, next) => {
@@ -13,6 +22,6 @@ export const validate =
       return next(new AppError(message, 400))
     }
 
-    req[source] = result.data
+    setValidatedSource(req, source, result.data)
     next()
   }

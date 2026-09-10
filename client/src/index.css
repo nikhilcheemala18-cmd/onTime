@@ -1,6 +1,18 @@
 @import "tailwindcss";
 
 @theme {
+  --color-warm-50: #fbfaf7;
+  --color-warm-100: #f6f1e8;
+  --color-warm-200: #ebe0cf;
+  --color-ink-900: #25211d;
+  --color-ink-700: #514940;
+  --color-ink-500: #7a7166;
+  --color-line: #e8dfd2;
+  --color-accent-50: #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-500: #f97316;
+  --color-accent-600: #ea580c;
+  --color-accent-700: #c2410c;
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
   --color-primary-200: #bfdbfe;
@@ -27,10 +39,28 @@
   }
 
   body {
-    @apply m-0 min-h-screen bg-gray-50 font-sans text-gray-900;
+    @apply m-0 min-h-screen bg-warm-50 font-sans text-ink-900;
   }
 
   #root {
     @apply min-h-screen;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+@layer utilities {
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-warm-50;
+  }
+
+  .scrollbar-soft {
+    scrollbar-color: #d7cbbc transparent;
+    scrollbar-width: thin;
   }
 }
